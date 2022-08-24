@@ -57,14 +57,30 @@ class User {
       .find({ _id: { $in: productIds } })
       .toArray()
       .then((products) => {
-        return products.map((product) => {
+
+        const productsData = products.map((product) => {
           product.quantity = this.cart.items.find((item) => {
             if (item.productId.toString() === product._id.toString())
               return item;
           }).quantity;
-
+        
           return product;
         });
+
+        if(productsData.length !== this.cart.items.length){
+          this.cart.items = productsData.map(product =>{
+            return {
+              productId: product._id,
+              quantity: product.quantity,
+            }
+          });
+          db.collection("users").updateOne(
+            { _id: new mongodb.ObjectId(this._id) },
+            { $set: { cart: this.cart } } //this will only update the cart value
+          );
+        }
+
+        return productsData;
       });
   }
 

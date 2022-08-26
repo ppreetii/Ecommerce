@@ -1,12 +1,17 @@
 const path = require("path");
 
+const mongoose = require("mongoose");
 const express = require("express");
 const bodyParser = require("body-parser");
+const dotenv = require("dotenv");
+
+dotenv.config();
 
 //const errorController = require("./controllers/mysql/error");
 const errorController = require("./controllers/mongodb/error");
-const mongoConnect = require("./util/mongodb/database").mongoConnect;
-const User = require("./models/mongodb/user");
+//const mongoConnect = require("./util/mongodb/database").mongoConnect;
+// const User = require("./models/mongodb/user");
+const User = require("./models/mongoose/user");
 
 /*
 const sequelize = require("./util/mysql/database");
@@ -32,10 +37,11 @@ app.use(express.static(path.join(__dirname, "public")));
 //middleware to add user to request body
 app.use((req, res, next) => {
   //User.findByPk(1)
-  User.findById("63053738077ef52410b54a4e")
+  User.findById("6307db3822c8b724936fda41")
     .then((user) => {
-      user.cart = user.cart || { items: [] };
-      req.user = new User(user.name, user.email, user.cart, user._id);
+      // user.cart = user.cart || { items: [] };
+      // req.user = new User(user.name, user.email, user.cart, user._id);
+      req.user = user;
       next();
     })
     .catch((err) => console.log(err));
@@ -47,10 +53,32 @@ app.use(shopRoutes);
 
 app.use(errorController.get404);
 
+mongoose
+  .connect(process.env.MONGODB_URL)
+  .then((result) => {
+    User.findOne().then(user =>{
+      if(!user){
+        const user = new User({
+          name : "Preeti",
+          email: "test@gmail.com",
+          cart: {
+            items:[]
+          }
+        });
+        user.save();
+      }
+    })
+    console.log("Connected to MongoDb via mongoose");
+    app.listen(process.env.PORT);
+    console.log(`Server started at port ${process.env.PORT}`);
+  })
+  .catch((err) => console.log(err));
+
+/*
 mongoConnect(() => {
   app.listen(process.env.PORT);
   console.log(`Server started at port ${process.env.PORT}`);
-});
+}); */
 
 // /**
 // DEFINING ASSOCIATIONS

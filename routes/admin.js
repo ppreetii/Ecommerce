@@ -3,14 +3,15 @@ const path = require('path');
 const express = require('express');
 
 //const adminController = require('../controllers/mysql/admin');
-const adminController = require('../controllers/mongodb/admin');
+// const adminController = require('../controllers/mongodb/admin');
+const adminController = require('../controllers/mongoose/admin');
 
 const router = express.Router();
 
 // /admin/add-product => GET
 router.get('/add-product', adminController.getAddProduct);
 
-// /admin/products => GET
+// // /admin/products => GET
 router.get('/products', adminController.getProducts);
 
 // /admin/add-product => POST

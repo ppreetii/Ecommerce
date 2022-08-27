@@ -49,7 +49,20 @@ exports.getCart = (req, res, next) => {
   req.user
     .populate("cart.items.productId", "title")
     .then((user) => {
-      const products = user.cart.items;
+      const products = user.cart.items.filter((cartItem) => {
+        return cartItem.productId !== null;
+      });
+
+      if (products.length !== user.cart.items.length) {
+        req.user.cart.items = products;
+        req.user
+          .save()
+          .then((result) =>
+            console.log("Cart was updated. Some items were removed by admin")
+          )
+          .catch((err) => console.log(err));
+      }
+
       res.render("shop/cart", {
         path: "/cart",
         pageTitle: "Your Cart",
@@ -86,7 +99,7 @@ exports.getOrders = (req, res, next) => {
     user: {
       name: req.user.name,
       userId: req.user._id,
-    }
+    },
   })
     .then((orders) => {
       res.render("shop/orders", {

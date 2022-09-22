@@ -54,8 +54,5 @@ userSchema.methods.deleteItemFromCart = function (prodId){
   return this.save();
 }
 
-userSchema.methods.addOrder = function(){
-  
-}
 
 module.exports = mongoose.model("User", userSchema);

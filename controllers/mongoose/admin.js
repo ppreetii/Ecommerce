@@ -5,6 +5,7 @@ exports.getAddProduct = (req, res, next) => {
     pageTitle: "Add Product",
     path: "/admin/add-product",
     editing: false,
+    isAuthenticated: req.session.isLoggedIn,
   });
 };
 
@@ -48,6 +49,7 @@ exports.getEditProduct = (req, res, next) => {
         path: "/admin/edit-product",
         editing: editMode,
         product: product,
+        isAuthenticated: req.session.isLoggedIn,
       });
     })
     .catch((err) => console.log(err));
@@ -80,7 +82,7 @@ exports.postEditProduct = (req, res, next) => {
 
 exports.getProducts = (req, res, next) => {
   Product.find()
-  /*
+    /*
   Because we defined relation between User and Product models, this helps us to get access between these two models more easily using
   certain mongoose method
   For ex: We could have used:
@@ -101,6 +103,7 @@ exports.getProducts = (req, res, next) => {
         prods: products,
         pageTitle: "Admin Products",
         path: "/admin/products",
+        isAuthenticated: req.session.isLoggedIn,
       });
     })
     .catch((err) => {

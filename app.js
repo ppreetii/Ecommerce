@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 const express = require("express");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
+const session = require("express-session");
+const MongoDbStore = require("connect-mongodb-session")(session);
 
 dotenv.config();
 
@@ -25,8 +27,14 @@ const OrderItem = require("./models/mysql/order-item");
 
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
+const authRoutes = require("./routes/auth");
 
 const app = express();
+
+const store = new MongoDbStore({
+  uri: process.env.MONGODB_URL,
+  collection: "sessions",
+});
 
 app.set("view engine", "ejs");
 app.set("views", "views");
@@ -34,14 +42,28 @@ app.set("views", "views");
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 
+app.use(
+  session({
+    secret: "confidential",
+    resave: false,
+    saveUninitialized: false,
+    store: store,
+  })
+);
 //middleware to add user to request body
 app.use((req, res, next) => {
-  //User.findByPk(1)
-  User.findById("6307db3822c8b724936fda41")
+
+  if(!req.session.user){
+    return next();
+  }
+  // User.findByPk(1)
+  // User.findById("6307db3822c8b724936fda41")
+  User.findById(req.session.user._id)
     .then((user) => {
       // user.cart = user.cart || { items: [] };
       // req.user = new User(user.name, user.email, user.cart, user._id);
       req.user = user;
+      // req.isLoggedIn = req.get('Cookie').trim().split("=")[1]; -> Getting cookie value set by postLogin request
       next();
     })
     .catch((err) => console.log(err));
@@ -50,24 +72,25 @@ app.use((req, res, next) => {
 
 app.use("/admin", adminRoutes);
 app.use(shopRoutes);
+app.use(authRoutes);
 
 app.use(errorController.get404);
 
 mongoose
   .connect(process.env.MONGODB_URL)
   .then((result) => {
-    User.findOne().then(user =>{
-      if(!user){
+    User.findOne().then((user) => {
+      if (!user) {
         const user = new User({
-          name : "Preeti",
+          name: "Preeti",
           email: "test@gmail.com",
           cart: {
-            items:[]
-          }
+            items: [],
+          },
         });
         user.save();
       }
-    })
+    });
     console.log("Connected to MongoDb via mongoose");
     app.listen(process.env.PORT);
     console.log(`Server started at port ${process.env.PORT}`);

@@ -1,10 +1,9 @@
-const path = require('path');
-
 const express = require('express');
 
-// //const shopController = require('../controllers/mysql/shop');
+// const shopController = require('../controllers/mysql/shop');
 // const shopController = require('../controllers/mongodb/shop');
 const shopController = require('../controllers/mongoose/shop');
+const isAuthorised = require('../middleware/authentication');
 
 const router = express.Router();
 
@@ -14,16 +13,16 @@ router.get('/products', shopController.getProducts);
 
 router.get('/products/:productId', shopController.getProduct);
 
-router.get('/cart', shopController.getCart);
+router.get('/cart', isAuthorised , shopController.getCart);
 
-router.post('/cart', shopController.postCart);
+router.post('/cart', isAuthorised , shopController.postCart);
 
-router.post('/cart-delete-item', shopController.postCartDeleteProduct);
+router.post('/cart-delete-item', isAuthorised , shopController.postCartDeleteProduct);
 
-router.get('/orders', shopController.getOrders);
+router.get('/orders', isAuthorised , shopController.getOrders);
 
-router.post('/create-order',shopController.postOrder);
+router.post('/create-order', isAuthorised ,shopController.postOrder);
 
-// // router.get('/checkout', shopController.getCheckout);
+// router.get('/checkout', shopController.getCheckout);
 
 module.exports = router;

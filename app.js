@@ -6,6 +6,8 @@ const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
 const session = require("express-session");
 const MongoDbStore = require("connect-mongodb-session")(session);
+const csrf = require("csurf");
+const flash = require("connect-flash");
 
 dotenv.config();
 
@@ -35,6 +37,7 @@ const store = new MongoDbStore({
   uri: process.env.MONGODB_URL,
   collection: "sessions",
 });
+const csrfProtection = csrf();
 
 app.set("view engine", "ejs");
 app.set("views", "views");
@@ -50,10 +53,12 @@ app.use(
     store: store,
   })
 );
+app.use(csrfProtection);  // used to protect against csrf attack, must be used after session middleware
+app.use(flash());   //store error message in session, and remove it once error has been taken care of, must be used after session middleware
+
 //middleware to add user to request body
 app.use((req, res, next) => {
-
-  if(!req.session.user){
+  if (!req.session.user) {
     return next();
   }
   // User.findByPk(1)
@@ -70,6 +75,13 @@ app.use((req, res, next) => {
   // next();
 });
 
+//middleware to pass the following attributes to all views rendered. Include hidden input to all views with POST method form.
+app.use((req, res, next) => {
+  res.locals.isAuthenticated = req.session.isLoggedIn;
+  res.locals.csrfToken = req.csrfToken();
+  next();
+});
+
 app.use("/admin", adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
@@ -79,6 +91,7 @@ app.use(errorController.get404);
 mongoose
   .connect(process.env.MONGODB_URL)
   .then((result) => {
+    /*
     User.findOne().then((user) => {
       if (!user) {
         const user = new User({
@@ -91,6 +104,7 @@ mongoose
         user.save();
       }
     });
+    */
     console.log("Connected to MongoDb via mongoose");
     app.listen(process.env.PORT);
     console.log(`Server started at port ${process.env.PORT}`);

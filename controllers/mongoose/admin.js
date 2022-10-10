@@ -1,4 +1,5 @@
 const Product = require("../../models/mongoose/product");
+const { ProductSchema } = require("../../validation-schema/validation");
 
 exports.getAddProduct = (req, res, next) => {
   res.render("admin/edit-product", {
@@ -13,21 +14,35 @@ exports.postAddProduct = (req, res, next) => {
   const imageUrl = req.body.imageUrl;
   const price = req.body.price;
   const description = req.body.description;
-  const product = new Product({
-    title,
-    price,
-    description,
-    imageUrl,
-    userId: req.user, //even though we pass entire user object, mongoose will only store userId, beacuse of model definition and relation mentioned through 'ref'
-  });
+  ProductSchema.validateAsync(
+    {
+      title,
+      imageUrl,
+      price,
+      description,
+    },
+    { abortEarly: false }
+  )
+    .then((result) => {
+      const product = new Product({
+        title,
+        price,
+        description,
+        imageUrl,
+        userId: req.user, //even though we pass entire user object, mongoose will only store userId, beacuse of model definition and relation mentioned through 'ref'
+      });
 
-  product
-    .save() //mongoose method
+      return product.save(); //mongoose method
+    })
     .then((result) => {
       console.log(`Product named '${title}' Created`);
       res.status(201).redirect("/admin/products");
     })
     .catch((error) => {
+      if (error.isJoi) {
+        error = error.details.map(err => err.message).join(" ; ")
+        return res.status(422).send({ValidationError: error});
+      }
       console.log(error);
     });
 };
@@ -60,7 +75,18 @@ exports.postEditProduct = (req, res, next) => {
   const updatedImageUrl = req.body.imageUrl;
   const updatedDescription = req.body.description;
 
-  Product.findById(prodId)
+  ProductSchema.validateAsync(
+    {
+      title: updatedTitle,
+      imageUrl: updatedImageUrl,
+      price: updatedPrice,
+      description: updatedDescription
+    },
+    { abortEarly: false }
+  )
+    .then((result) => {
+      return Product.findById(prodId);
+    })
     .then((product) => {
       if (product.userId.toString() !== req.user._id.toString()) {
         return res.redirect("/admin/products");
@@ -70,14 +96,18 @@ exports.postEditProduct = (req, res, next) => {
       product.description = updatedDescription;
       product.imageUrl = updatedImageUrl;
 
-      return product.save().then((result) => {
-        console.log("Product Updated Successfully");
-        res.redirect("/admin/products");
-      });
+      return product.save();
     })
-
-    .catch((err) => {
-      console.log(err);
+    .then((result) => {
+      console.log("Product Updated Successfully");
+      res.redirect("/admin/products");
+    })
+    .catch((error) => {
+      if (error.isJoi) {
+        error = error.details.map(err => err.message).join(" ; ")
+        return res.status(422).send({ValidationError: error});
+      }
+      console.log(error);
     });
 };
 

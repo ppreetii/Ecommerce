@@ -5,6 +5,10 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 const User = require("../../models/mongoose/user");
+const {
+  SignUpSchema,
+  LoginSchema,
+} = require("../../validation-schema/validation");
 
 const courier = CourierClient({
   authorizationToken: process.env.AUTH_TOKEN,
@@ -18,41 +22,70 @@ exports.getLogin = (req, res, next) => {
     pageTitle: "Login",
     path: "/login",
     errorMessage: message,
+    oldInput: {
+      email: "",
+      password: ""
+    },
   });
 };
 
 exports.postLogin = (req, res, next) => {
   const email = req.body.email;
   const password = req.body.password;
-  User.findOne({ email })
-    .then((user) => {
-      if (!user) {
-        req.flash("error", "Invalid Email");
-        return res.redirect("/login");
-      }
 
-      bcrypt
-        .compare(password, user.password)
-        .then((doMatch) => {
-          //doMatch = true/false
-          if (doMatch) {
-            // res.setHeader("Set-Cookie", "loggedIn=true"); -> this sets cookie
-            req.session.isLoggedIn = true;
-            req.session.user = user;
-            return req.session.save((err) => {
-              //return is necessary to not go to res redirect line outside if block
-              //making sure session data is stored before we redirect because sometimes storing might take few mS to complete , but
-              //render would have been complete, that time you won't see changes and have to reload the page.
-              console.log(err);
-              res.redirect("/");
-            });
+  LoginSchema.validateAsync(
+    {
+      email,
+      password,
+    },
+    { abortEarly: false }
+  )
+    .then((result) => {
+      console.log("No Validation Errors");
+      User.findOne({ email })
+        .then((user) => {
+          if (!user) {
+            req.flash("error", "Invalid Email");
+            return res.redirect("/login");
           }
-          req.flash("error", "Incorrect Password");
-          res.redirect("/login");
+
+          bcrypt
+            .compare(password, user.password)
+            .then((doMatch) => {
+              //doMatch = true/false
+              if (doMatch) {
+                // res.setHeader("Set-Cookie", "loggedIn=true"); -> this sets cookie
+                req.session.isLoggedIn = true;
+                req.session.user = user;
+                return req.session.save((err) => {
+                  //return is necessary to not go to res redirect line outside if block
+                  //making sure session data is stored before we redirect because sometimes storing might take few mS to complete , but
+                  //render would have been complete, that time you won't see changes and have to reload the page.
+                  console.log(err);
+                  res.redirect("/");
+                });
+              }
+              req.flash("error", "Incorrect Password");
+              res.redirect("/login");
+            })
+            .catch((err) => console.log(err)); //only executes if something went wrong with bcrypt and not when pswds do not match
         })
-        .catch((err) => console.log(err)); //only executes if something went wrong with bcrypt and not when pswds do not match
+        .catch((error) => {
+          console.log(error);
+        });
     })
-    .catch((err) => console.log(err));
+    .catch((error) => {
+      error = error.details.map((err) => err.message).join(" ; ");
+      return res.status(422).render("auth/login", {
+        path: "/login",
+        pageTitle: "Login",
+        errorMessage: error,
+        oldInput: {
+          email,
+          password,
+        },
+      });
+    });
 };
 
 exports.getSignup = (req, res, next) => {
@@ -63,6 +96,11 @@ exports.getSignup = (req, res, next) => {
     pageTitle: "Signup",
     path: "/signup",
     errorMessage: message,
+    oldInput: {
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
   });
 };
 
@@ -71,47 +109,74 @@ exports.postSignup = (req, res, next) => {
   const password = req.body.password;
   const confirmPassword = req.body.confirmPassword;
 
-  User.findOne({ email })
-    .then((userDoc) => {
-      if (userDoc) {
-        req.flash("error", "Email already exists");
-        return res.redirect("/signup");
-      }
-      if (password !== confirmPassword) {
-        req.flash("error", "Password mistmatch");
-        return res.redirect("/signup");
-      }
-      return bcrypt
-        .hash(password, 12)
-        .then((hashedPassword) => {
-          const user = new User({
-            email,
-            password: hashedPassword,
-            cart: { items: [] },
-          });
+  SignUpSchema.validateAsync(
+    {
+      email,
+      password,
+      confirmPassword,
+    },
+    { abortEarly: false }
+  )
+    .then((result) => {
+      console.log("No Validation Errors");
+      User.findOne({ email })
+        .then((userDoc) => {
+          if (userDoc) {
+            req.flash("error", "Email already exists");
+            return res.redirect("/signup");
+          }
 
-          return user.save();
+          return bcrypt
+            .hash(password, 12)
+            .then((hashedPassword) => {
+              const user = new User({
+                email,
+                password: hashedPassword,
+                cart: { items: [] },
+              });
+
+              return user.save();
+            })
+            .then((result) => {
+              res.redirect("/login");
+              return courier.send({
+                message: {
+                  content: {
+                    title: "Welcome to Node Shop!",
+                    body: `Welcome to our shop. You are all set. Hope u enjoy your time with us.Feel free to reach out to us for any feedback or queries.`,
+                  },
+                  to: {
+                    email: email,
+                  },
+                },
+              });
+            })
+            .then((result) => {
+              console.log("Email Sent Successfully");
+            })
+            .catch((err) => console.log(err));
         })
-        .then((result) => {
-          res.redirect("/login");
-          return courier.send({
-            message: {
-              content: {
-                title: "Welcome to Node Shop!",
-                body: `Welcome to our shop. You are all set. Hope u enjoy your time with us.Feel free to reach out to us for any feedback or queries.`,
-              },
-              to: {
-                email: email,
-              },
-            },
-          });
-        })
-        .then((result) => {
-          console.log("Email Sent Successfully");
-        })
-        .catch((err) => console.log(err));
+        .catch((error) => {
+          console.log(error);
+        });
     })
-    .catch((err) => console.log(err));
+    .catch((error) => {
+      if (error.isJoi) {
+        error = error.details.map((err) => err.message).join(" ; ");
+        return res.status(422).render("auth/signup", {
+          pageTitle: "Signup",
+          path: "/signup",
+          errorMessage: error,
+          oldInput: {
+            email,
+            password,
+            confirmPassword,
+          },
+        });
+      }
+
+      console.log(error);
+    });
 };
 
 exports.postLogout = (req, res, next) => {

@@ -1,0 +1,6 @@
+module.exports = {
+   TITLE_LENGTH_MIN : 3,
+   DESCRIPTION_LENGTH_MIN : 5,
+   DESCRIPTION_LENGTH_MAX : 400,
+   PSWD_LENGTH_MIN : 5
+}

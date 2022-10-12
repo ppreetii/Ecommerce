@@ -1,5 +1,7 @@
 const Product = require("../../models/mongoose/product");
 const Order = require("../../models/mongoose/order");
+const ERRORS = require('../../constants/errors')
+const CONSTANTS = require('../../constants/common')
 
 exports.getProducts = (req, res, next) => {
   Product.find() //unlike mongodb find() method which returns cursor, mongoose find() returns array. We can convert
@@ -12,7 +14,10 @@ exports.getProducts = (req, res, next) => {
       });
     })
     .catch((err) => {
-      console.log(err);
+      err = new Error(
+        ERRORS.PRODUCTS_ERROR
+      );
+      return next(err);
     });
 };
 
@@ -27,7 +32,10 @@ exports.getProduct = (req, res, next) => {
       });
     })
     .catch((err) => {
-      console.log(err);
+      err = new Error(
+        ERRORS.PRODUCT_DETAIL_FAIL
+      );
+      return next(err);
     });
 };
 
@@ -42,7 +50,10 @@ exports.getIndex = (req, res, next) => {
       });
     })
     .catch((err) => {
-      console.log(err);
+      err = new Error(
+        ERRORS.PRODUCTS_ERROR
+      );
+      return next(err);
     });
 };
 
@@ -70,7 +81,12 @@ exports.getCart = (req, res, next) => {
         products: products
       });
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      err = new Error(
+        ERRORS.CART_ERROR
+      );
+      return next(err);
+    });
 };
 
 exports.postCart = (req, res, next) => {
@@ -93,7 +109,12 @@ exports.postCartDeleteProduct = (req, res, next) => {
     .then((result) => {
       res.redirect("/cart");
     })
-    .catch((err) => console.log(err));
+    .catch((err) =>{
+      err = new Error(
+        ERRORS.CART_DELETE_ERROR
+      );
+      return next(err);
+    });
 };
 
 exports.getOrders = (req, res, next) => {
@@ -110,7 +131,12 @@ exports.getOrders = (req, res, next) => {
         orders: orders
       });
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      err = new Error(
+        ERRORS.ORDER_ERROR
+      );
+      return next(err);
+    });
 };
 
 exports.postOrder = (req, res, next) => {
@@ -142,7 +168,12 @@ exports.postOrder = (req, res, next) => {
       console.log("Order Generated. Whoho!!");
       res.redirect("/orders");
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      err = new Error(
+        ERRORS.ORDER_CREATE_ERROR
+      );
+      return next(err);
+    });
 };
 
 // exports.getCheckout = (req, res, next) => {

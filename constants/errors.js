@@ -1,3 +1,24 @@
 module.exports = {
-    PWSD_MISMATCH : "Passwords mismatch.Please re-enter password."
+    PWSD_MISMATCH : "Passwords mismatch.Please re-enter password.",
+    BCRYPT_FAILURE: "Some Problem occurred while decrypting the password.",
+    INVALID_EMAIL: "Invalid Email",
+    EMAIL_EXIST: "Email already exists",
+    INVALID_PSWD:"Incorrect Password",
+    LOGIN_USER_ERROR: "Database Operation failed while fetching user record.",
+    SIGNUP_ERROR: "Some problem occurred while decrypting the password or sending confirmation email.",
+    SIGNUP_USER_ERROR:  "Database Operation failed while checking for existing email.",
+    USER_NOT_FOUND: "No account with this email found",
+    PSWD_RESET_ERROR:  "Database Operation failed while trying to set new password.",
+    PRODUCT_CREATION_ERROR: "Database Operation failed while creating product.",
+    PRODUCT_EDIT_ERROR: "Database Operation failed while loading product edit page",
+    PRODUCT_EDIT_FAIL: "Database Operation failed while editing product.",
+    PRODUCT_DETAIL_FAIL: "Database Operation failed while fetch information of product.",
+    USER_PRODUCTS_ERROR: "Database Operation failed while trying to find products created by the user.",
+    PRODUCTS_ERROR: "Database Operation failed while trying to find all products.",
+    PRODUCT_DELETE_ERROR:  "Database Operation failed while trying to delete the product.",
+    CART_ERROR: "Database Operation failed while fetching user cart",
+    CART_DELETE_ERROR: "Database operation to delete cart item failed.",
+    ORDER_ERROR: "Database operation to find orders failed.",
+    ORDER_CREATE_ERROR: "Database operation to create order failed.",
+    ERROR: "error"
 }

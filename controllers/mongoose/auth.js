@@ -9,13 +9,15 @@ const {
   SignUpSchema,
   LoginSchema,
 } = require("../../validation-schema/validation");
+const ERRORS = require("../../constants/errors");
+const CONSTANTS = require("../../constants/common");
 
 const courier = CourierClient({
   authorizationToken: process.env.AUTH_TOKEN,
 });
 
 exports.getLogin = (req, res, next) => {
-  let message = req.flash("error");
+  let message = req.flash(ERRORS.ERROR);
   message = message.length > 0 ? message[0] : null;
 
   res.render("auth/login", {
@@ -24,7 +26,7 @@ exports.getLogin = (req, res, next) => {
     errorMessage: message,
     oldInput: {
       email: "",
-      password: ""
+      password: "",
     },
   });
 };
@@ -45,7 +47,7 @@ exports.postLogin = (req, res, next) => {
       User.findOne({ email })
         .then((user) => {
           if (!user) {
-            req.flash("error", "Invalid Email");
+            req.flash(ERRORS.ERROR, ERRORS.INVALID_EMAIL);
             return res.redirect("/login");
           }
 
@@ -65,13 +67,17 @@ exports.postLogin = (req, res, next) => {
                   res.redirect("/");
                 });
               }
-              req.flash("error", "Incorrect Password");
+              req.flash(ERRORS.ERROR, ERRORS.INVALID_PSWD);
               res.redirect("/login");
             })
-            .catch((err) => console.log(err)); //only executes if something went wrong with bcrypt and not when pswds do not match
+            .catch((err) => {
+              err = new Error(ERRORS.BCRYPT_FAILURE);
+              return next(err);
+            }); //only executes if something went wrong with bcrypt and not when pswds do not match
         })
-        .catch((error) => {
-          console.log(error);
+        .catch((err) => {
+          err = new Error(ERRORS.LOGIN_USER_ERROR);
+          return next(err);
         });
     })
     .catch((error) => {
@@ -89,7 +95,7 @@ exports.postLogin = (req, res, next) => {
 };
 
 exports.getSignup = (req, res, next) => {
-  let message = req.flash("error");
+  let message = req.flash(ERRORS.ERROR);
   message = message.length > 0 ? message[0] : null;
 
   res.render("auth/signup", {
@@ -122,7 +128,7 @@ exports.postSignup = (req, res, next) => {
       User.findOne({ email })
         .then((userDoc) => {
           if (userDoc) {
-            req.flash("error", "Email already exists");
+            req.flash(ERRORS.ERROR, ERRORS.EMAIL_EXIST);
             return res.redirect("/signup");
           }
 
@@ -142,8 +148,8 @@ exports.postSignup = (req, res, next) => {
               return courier.send({
                 message: {
                   content: {
-                    title: "Welcome to Node Shop!",
-                    body: `Welcome to our shop. You are all set. Hope u enjoy your time with us.Feel free to reach out to us for any feedback or queries.`,
+                    title: CONSTANTS.MSG_TITLE,
+                    body: CONSTANTS.MSG_BODY,
                   },
                   to: {
                     email: email,
@@ -154,10 +160,14 @@ exports.postSignup = (req, res, next) => {
             .then((result) => {
               console.log("Email Sent Successfully");
             })
-            .catch((err) => console.log(err));
+            .catch((err) => {
+              err = new Error(ERRORS.SIGNUP_ERROR);
+              return next(err);
+            });
         })
-        .catch((error) => {
-          console.log(error);
+        .catch((err) => {
+          err = new Error(ERRORS.SIGNUP_USER_ERROR);
+          return next(err);
         });
     })
     .catch((error) => {
@@ -188,7 +198,7 @@ exports.postLogout = (req, res, next) => {
 };
 
 exports.getResetPassword = (req, res, next) => {
-  let message = req.flash("error");
+  let message = req.flash(ERRORS.ERROR);
   message = message.length > 0 ? message[0] : null;
 
   res.render("auth/reset", {
@@ -209,7 +219,7 @@ exports.postResetPassword = (req, res, next) => {
     User.findOne({ email })
       .then((user) => {
         if (!user) {
-          req.flash("error", `No account with this email found`);
+          req.flash(ERRORS.ERROR, ERRORS.USER_NOT_FOUND);
           return res.redirect("/reset");
         }
 
@@ -222,7 +232,7 @@ exports.postResetPassword = (req, res, next) => {
         return courier.send({
           message: {
             content: {
-              title: "Password Reset- Node Shop",
+              title: CONSTANTS.PSWD_RESET_MSG_TITLE,
               body: ` We received a request to change password for this account.Go to
              'http://localhost:3000/reset/${token}" to reset your password.`,
             },
@@ -248,7 +258,7 @@ exports.getNewPassword = (req, res, next) => {
     resetToken: token,
     resetTokenExpiration: { $gt: Date.now() },
   }).then((user) => {
-    let message = req.flash("error");
+    let message = req.flash(ERRORS.ERROR);
     message = message.length > 0 ? message[0] : null;
 
     res.render("auth/new-password", {
@@ -282,5 +292,8 @@ exports.postNewPassword = (req, res, next) => {
     .then((result) => {
       res.redirect("/login");
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      err = new Error(ERRORS.PSWD_RESET_ERROR);
+      return next(err);
+    });
 };

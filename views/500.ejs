@@ -1,0 +1,11 @@
+<%- include('includes/head.ejs') %>
+</head>
+
+<body>
+    <%- include('includes/navigation.ejs') %>
+    <h1><center>Something went wrong!</center> </h1>
+    <p><center>Sorry for the inconvenience.Please be patient with us, while we fix the problem.</center></p>
+    <% if(reason){ %>
+    <center><b>Reason:</b> <%= reason%></center>
+    <% }%>
+<%- include('includes/end.ejs') %>

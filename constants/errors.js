@@ -20,5 +20,6 @@ module.exports = {
     CART_DELETE_ERROR: "Database operation to delete cart item failed.",
     ORDER_ERROR: "Database operation to find orders failed.",
     ORDER_CREATE_ERROR: "Database operation to create order failed.",
-    ERROR: "error"
+    ERROR: "error",
+    IMAGE_UPLOAD_ERROR: "Attached file is not an image."
 }

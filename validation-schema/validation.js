@@ -10,7 +10,7 @@ exports.ProductSchema = Joi.object().keys({
     .min(CONSTANTS.DESCRIPTION_LENGTH_MIN)
     .max(CONSTANTS.DESCRIPTION_LENGTH_MAX)
     .required(),
-  imageUrl: Joi.string().required()
+  imageUrl: Joi.string()
 });
 
 exports.LoginSchema = Joi.object().keys({

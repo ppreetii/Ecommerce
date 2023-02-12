@@ -1,6 +1,9 @@
+const path = require("path");
+
 const Product = require("../../models/mongoose/product");
-const { ProductSchema } = require("../../validation-schema/validation");
-const ERRORS = require('../../constants/errors')
+const { ProductSchema, EditProductSchema } = require("../../validation-schema/validation");
+const ERRORS = require('../../constants/errors');
+const fileUtils = require("../../util/file");
 
 exports.getAddProduct = (req, res, next) => {
   res.render("admin/edit-product", {
@@ -14,9 +17,27 @@ exports.getAddProduct = (req, res, next) => {
 
 exports.postAddProduct = (req, res, next) => {
   const title = req.body.title;
-  const imageUrl = req.body.imageUrl;
+  // const imageUrl = req.body.imageUrl;
+  const image = req.file;  //parsing image through multer
   const price = req.body.price;
   const description = req.body.description;
+
+  if(!image){
+  
+    return res.status(422).render("admin/edit-product", {
+      pageTitle: "Add Product",
+      path: "/admin/add-product",
+      editing: false,
+      hasError: true,
+      product: {
+        title,
+        price,
+        description
+      },
+      errorMessage: ERRORS.IMAGE_UPLOAD_ERROR
+    });
+  }
+  let imageUrl = `/${image.path}`;
   ProductSchema.validateAsync(
     {
       title,
@@ -118,13 +139,11 @@ exports.postEditProduct = (req, res, next) => {
   const prodId = req.body.productId;
   const updatedTitle = req.body.title;
   const updatedPrice = req.body.price;
-  const updatedImageUrl = req.body.imageUrl;
   const updatedDescription = req.body.description;
 
   ProductSchema.validateAsync(
     {
       title: updatedTitle,
-      imageUrl: updatedImageUrl,
       price: updatedPrice,
       description: updatedDescription
     },
@@ -140,12 +159,15 @@ exports.postEditProduct = (req, res, next) => {
           product.title = updatedTitle;
           product.price = updatedPrice;
           product.description = updatedDescription;
-          product.imageUrl = updatedImageUrl;
+          if(req.file){
+            fileUtils.deleteFile(path.join(__dirname,"./../../",product.imageUrl));
+            product.imageUrl = `/${req.file.path}`;
+          }
 
           return product.save().then((result) => {
             console.log("Product Updated Successfully");
             res.redirect("/admin/products");
-          });
+          }); 
         })
         .catch((err) => {
           //there is some problem with saving product or while finding the product.
@@ -181,7 +203,6 @@ exports.postEditProduct = (req, res, next) => {
         hasError: true,
         product: {
           title: updatedTitle,
-          imageUrl: updatedImageUrl,
           price: updatedPrice,
           description: updatedDescription,
           _id: prodId,
@@ -228,16 +249,21 @@ exports.getProducts = (req, res, next) => {
 
 exports.postDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
-  // Product.findByIdAndRemove(prodId)
-  Product.deleteOne({ _id: prodId, userId: req.user._id.toString() })
-    .then(() => {
-      console.log("Product deleted.");
-      res.redirect("/admin/products");
-    })
-    .catch((err) =>{
-      err = new Error(
-       ERRORS.PRODUCT_DELETE_ERROR
-      );
-      return next(err);
-    });
+  Product.findById(prodId).then(product =>{
+    if(!product)
+    return next(new Error('Product not found.'));
+
+    fileUtils.deleteFile(product.imageUrl);
+    return Product.deleteOne({ _id: prodId, userId: req.user._id.toString() });
+  })
+  .then(() => {
+    console.log("Product deleted.");
+    res.redirect("/admin/products");
+  })
+  .catch((err) =>{
+    const error = new Error(err);
+    error.httpStatusCode = 500;
+    return next(error)
+  });
+  
 };

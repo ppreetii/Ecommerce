@@ -10,7 +10,7 @@
             <% }else{ %>
                 <% orders.forEach(order =>{ %>
                     <ul class="cart__item-list">
-                        <h1># Order Id: <%= order._id %></h1>
+                        <h2>Order # <%= order._id %> - <a href= "/orders/<%= order._id%>">Invoice</a></h2> 
                         <% order.items.forEach(productData =>{ %>
                             <li class="cart__item">
                                 <% /* %>
@@ -20,7 +20,7 @@
                                 <h3><%= productData.product.title %> </h3>
                                 <h3>Qty: <%= productData.quantity %> </h3>
                             </li>
-                        <%  }) %>
+                        <%  }) %>                       
                     </ul>
                 <%  }) %>
             <% } %>

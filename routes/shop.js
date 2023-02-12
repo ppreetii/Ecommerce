@@ -21,6 +21,8 @@ router.post('/cart-delete-item', isAuthorised , shopController.postCartDeletePro
 
 router.get('/orders', isAuthorised , shopController.getOrders);
 
+router.get('/orders/:orderId', isAuthorised , shopController.getInvoice);
+
 router.post('/create-order', isAuthorised ,shopController.postOrder);
 
 // router.get('/checkout', shopController.getCheckout);

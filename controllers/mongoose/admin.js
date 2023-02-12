@@ -1,6 +1,9 @@
+const path = require("path");
+
 const Product = require("../../models/mongoose/product");
 const { ProductSchema, EditProductSchema } = require("../../validation-schema/validation");
 const ERRORS = require('../../constants/errors');
+const fileUtils = require("../../util/file");
 
 exports.getAddProduct = (req, res, next) => {
   res.render("admin/edit-product", {
@@ -156,13 +159,15 @@ exports.postEditProduct = (req, res, next) => {
           product.title = updatedTitle;
           product.price = updatedPrice;
           product.description = updatedDescription;
-          if(req.file)
-          product.imageUrl = `/${req.file.path}`;
+          if(req.file){
+            fileUtils.deleteFile(path.join(__dirname,"./../../",product.imageUrl));
+            product.imageUrl = `/${req.file.path}`;
+          }
 
           return product.save().then((result) => {
             console.log("Product Updated Successfully");
             res.redirect("/admin/products");
-          });
+          }); 
         })
         .catch((err) => {
           //there is some problem with saving product or while finding the product.
@@ -244,16 +249,21 @@ exports.getProducts = (req, res, next) => {
 
 exports.postDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
-  // Product.findByIdAndRemove(prodId)
-  Product.deleteOne({ _id: prodId, userId: req.user._id.toString() })
-    .then(() => {
-      console.log("Product deleted.");
-      res.redirect("/admin/products");
-    })
-    .catch((err) =>{
-      err = new Error(
-       ERRORS.PRODUCT_DELETE_ERROR
-      );
-      return next(err);
-    });
+  Product.findById(prodId).then(product =>{
+    if(!product)
+    return next(new Error('Product not found.'));
+
+    fileUtils.deleteFile(product.imageUrl);
+    return Product.deleteOne({ _id: prodId, userId: req.user._id.toString() });
+  })
+  .then(() => {
+    console.log("Product deleted.");
+    res.redirect("/admin/products");
+  })
+  .catch((err) =>{
+    const error = new Error(err);
+    error.httpStatusCode = 500;
+    return next(error)
+  });
+  
 };

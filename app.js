@@ -8,6 +8,7 @@ const session = require("express-session");
 const MongoDbStore = require("connect-mongodb-session")(session);
 const csrf = require("csurf");
 const flash = require("connect-flash");
+const multer = require("multer");
 
 dotenv.config();
 
@@ -40,11 +41,41 @@ const store = new MongoDbStore({
 });
 const csrfProtection = csrf();
 
+const fileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "images");
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+
+//only allowing particular file uploads
+const fileFilter = (req, file, cb) => {
+  if (
+    file.mimetype === "image/png" ||
+    file.mimetype === "image/jpeg" ||
+    file.mimetype === "image/jpg"
+  ) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
+
 app.set("view engine", "ejs");
 app.set("views", "views");
 
+//bodyParser.urlencoded only parse req body in text form. Binary data can't be parsed. So we use multer.
 app.use(bodyParser.urlencoded({ extended: false }));
+
+//single - Returns middleware that processes a single file associated with the given form field. "imageUrl" is the name of imageUrl file input field
+//multer is used to parse multipart form -data (text as well as binary data)
+app.use(
+  multer({ storage: fileStorage, fileFilter: fileFilter }).single("image")
+);
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/images", express.static(path.join(__dirname, "images"))); //helps to show static images stored in images folder
 
 app.use(
   session({
@@ -86,7 +117,7 @@ app.use((req, res, next) => {
       // throw new Error(err) -> this is not used when we want to throw error through express middlware. Important: we can never
       //reach that middleware if we are trying to throw inside then/catch block or callbacks. We can only reach it through
       //synchronous codeflow.
-      next(new Error('Problem while fetching user from database.'));
+      next(new Error("Problem while fetching user from database."));
     });
   // next();
 });
@@ -95,19 +126,20 @@ app.use("/admin", adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
 
-app.get('/500',errorController.get500);
+app.get("/500", errorController.get500);
 app.use(errorController.get404);
 
 //this is a special middleware by express, where we can directly catch error throw next(error)
-app.use((error,req,res,next) =>{
-  // res.redirect('/500') -> shouldn't redirect because if error is thrown from user middleware, the app will enter infinite loop and 
+app.use((error, req, res, next) => {
+  // res.redirect('/500') -> shouldn't redirect because if error is thrown from user middleware, the app will enter infinite loop and
   // keep switching between this middleware and user middleware , because middlewares are parsed from top to bottom.
   res.status(500).render("500", {
     pageTitle: "Error",
     path: "/500",
-    reason: error
+    reason: error,
+    isAuthenticated: req.user,
   });
-})
+});
 
 mongoose
   .connect(process.env.MONGODB_URL)

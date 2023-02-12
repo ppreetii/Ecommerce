@@ -1,6 +1,6 @@
 const Product = require("../../models/mongoose/product");
-const { ProductSchema } = require("../../validation-schema/validation");
-const ERRORS = require('../../constants/errors')
+const { ProductSchema, EditProductSchema } = require("../../validation-schema/validation");
+const ERRORS = require('../../constants/errors');
 
 exports.getAddProduct = (req, res, next) => {
   res.render("admin/edit-product", {
@@ -14,9 +14,27 @@ exports.getAddProduct = (req, res, next) => {
 
 exports.postAddProduct = (req, res, next) => {
   const title = req.body.title;
-  const imageUrl = req.body.imageUrl;
+  // const imageUrl = req.body.imageUrl;
+  const image = req.file;  //parsing image through multer
   const price = req.body.price;
   const description = req.body.description;
+
+  if(!image){
+  
+    return res.status(422).render("admin/edit-product", {
+      pageTitle: "Add Product",
+      path: "/admin/add-product",
+      editing: false,
+      hasError: true,
+      product: {
+        title,
+        price,
+        description
+      },
+      errorMessage: ERRORS.IMAGE_UPLOAD_ERROR
+    });
+  }
+  let imageUrl = `/${image.path}`;
   ProductSchema.validateAsync(
     {
       title,
@@ -118,13 +136,11 @@ exports.postEditProduct = (req, res, next) => {
   const prodId = req.body.productId;
   const updatedTitle = req.body.title;
   const updatedPrice = req.body.price;
-  const updatedImageUrl = req.body.imageUrl;
   const updatedDescription = req.body.description;
 
   ProductSchema.validateAsync(
     {
       title: updatedTitle,
-      imageUrl: updatedImageUrl,
       price: updatedPrice,
       description: updatedDescription
     },
@@ -140,7 +156,8 @@ exports.postEditProduct = (req, res, next) => {
           product.title = updatedTitle;
           product.price = updatedPrice;
           product.description = updatedDescription;
-          product.imageUrl = updatedImageUrl;
+          if(req.file)
+          product.imageUrl = `/${req.file.path}`;
 
           return product.save().then((result) => {
             console.log("Product Updated Successfully");
@@ -181,7 +198,6 @@ exports.postEditProduct = (req, res, next) => {
         hasError: true,
         product: {
           title: updatedTitle,
-          imageUrl: updatedImageUrl,
           price: updatedPrice,
           description: updatedDescription,
           _id: prodId,

@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const PDFDocument = require("pdfkit");
 
 const Product = require("../../models/mongoose/product");
 const Order = require("../../models/mongoose/order");
@@ -174,6 +175,7 @@ exports.getInvoice = (req, res, next) => {
 
     if (order.user.userId.toString() !== req.user._id.toString())
       return next(new Error("Unauthorized."));
+
     /**
      * This method is fine for small files, however for large files , it will lead to memory overflow for multiple requests.
      * The recommended way is use to stream the file on the file, which is shown after the comment.
@@ -195,13 +197,56 @@ exports.getInvoice = (req, res, next) => {
     });
      */
 
-    const file = fs.createReadStream(invoicePath);
+    /**
+     * Recommended method 
+      const file = fs.createReadStream(invoicePath);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+      "Content-Disposition",
+      'inline;filename="' + invoiceName + '"'
+      );
+      file.pipe(res);  //writing contents of file in chunks to res.
+     */
+
+    //generate and send pdf using pdfkit
+
+    let pdfDoc = new PDFDocument();
+    pdfDoc.pipe(fs.createWriteStream(invoicePath));
+    pdfDoc.pipe(res);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
       'inline;filename="' + invoiceName + '"'
     );
-    file.pipe(res);  //writing contents of file in chunks to res.
+
+    pdfDoc
+      .font("Times-Roman", 18)
+      // .fontSize(25)
+      .text("Invoice", 100, 50, { align: "center" })
+      .moveDown(0.5);
+    
+    pdfDoc.rect(80,30,450,60).stroke().moveDown(0.5);
+    
+    let totalPrice = 0;
+    order.items.forEach((productData) => {
+      totalPrice += (productData.product.price * productData.quantity) ;
+      pdfDoc
+        .moveDown(0.5)
+        .fontSize(15)
+        .fillColor('black')
+        .text(`${productData.product.title} - ${productData.quantity} x Rs. ${productData.product.price}`, {
+          align: "center"
+        });
+    });
+
+    pdfDoc.rect(80,30,450,690).stroke();
+    
+    pdfDoc.rect(80,690,450,30).stroke();
+    pdfDoc.moveDown(0.5).font("Times-Roman", 15).text(`Total Price - Rs. ${totalPrice}`, 80, 698, {
+      align : "center"
+    });
+    
+    pdfDoc.end();
   });
 };
 // exports.getCheckout = (req, res, next) => {

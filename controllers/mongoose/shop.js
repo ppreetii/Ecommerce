@@ -6,6 +6,7 @@ const Product = require("../../models/mongoose/product");
 const Order = require("../../models/mongoose/order");
 const ERRORS = require("../../constants/errors");
 const CONSTANTS = require("../../constants/common");
+const { constants } = require("fs/promises");
 
 exports.getProducts = (req, res, next) => {
   Product.find() //unlike mongodb find() method which returns cursor, mongoose find() returns array. We can convert
@@ -40,7 +41,10 @@ exports.getProduct = (req, res, next) => {
 };
 
 exports.getIndex = (req, res, next) => {
+  const page = req.query.page || CONSTANTS.DEFAULT_PAGE;
   Product.find()
+    .skip((page - 1) * CONSTANTS.ITEMS_PER_PAGE)
+    .limit(CONSTANTS.ITEMS_PER_PAGE)
     .then((products) => {
       res.status(200).render("shop/index", {
         prods: products,
@@ -224,28 +228,34 @@ exports.getInvoice = (req, res, next) => {
       // .fontSize(25)
       .text("Invoice", 100, 50, { align: "center" })
       .moveDown(0.5);
-    
-    pdfDoc.rect(80,30,450,60).stroke().moveDown(0.5);
-    
+
+    pdfDoc.rect(80, 30, 450, 60).stroke().moveDown(0.5);
+
     let totalPrice = 0;
     order.items.forEach((productData) => {
-      totalPrice += (productData.product.price * productData.quantity) ;
+      totalPrice += productData.product.price * productData.quantity;
       pdfDoc
         .moveDown(0.5)
         .fontSize(15)
-        .fillColor('black')
-        .text(`${productData.product.title} - ${productData.quantity} x Rs. ${productData.product.price}`, {
-          align: "center"
-        });
+        .fillColor("black")
+        .text(
+          `${productData.product.title} - ${productData.quantity} x Rs. ${productData.product.price}`,
+          {
+            align: "center",
+          }
+        );
     });
 
-    pdfDoc.rect(80,30,450,690).stroke();
-    
-    pdfDoc.rect(80,690,450,30).stroke();
-    pdfDoc.moveDown(0.5).font("Times-Roman", 15).text(`Total Price - Rs. ${totalPrice}`, 80, 698, {
-      align : "center"
-    });
-    
+    pdfDoc.rect(80, 30, 450, 690).stroke();
+
+    pdfDoc.rect(80, 690, 450, 30).stroke();
+    pdfDoc
+      .moveDown(0.5)
+      .font("Times-Roman", 15)
+      .text(`Total Price - Rs. ${totalPrice}`, 80, 698, {
+        align: "center",
+      });
+
     pdfDoc.end();
   });
 };

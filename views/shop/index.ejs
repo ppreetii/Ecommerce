@@ -7,10 +7,7 @@
 
     <main>
         <% if (prods.length > 0) { %>
-            <section class = "pagination">
-                <a href="/?page=1">1</a>
-                <a href="/?page=2">2</a>
-            </section>
+            <%- include('../includes/pagination.ejs',{currentPage,previousPage,nextPage,lastPage}) %>
             <div class="grid">
                 <% for (let product of prods) { %>
                     <article class="card product-item">
@@ -26,7 +23,7 @@
                             <p class="product__description"><%= product.description %></p>
                         </div>
                         <div class="card__actions">
-                            <%- include('../includes/add-to-cart.ejs', {product: product}) %>
+                            <%- include('../includes/add-to-cart.ejs', {product}) %>
                         </div>
                     </article>
                 <% } %>

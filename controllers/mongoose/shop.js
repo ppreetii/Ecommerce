@@ -266,7 +266,7 @@ exports.getInvoice = (req, res, next) => {
         .fontSize(15)
         .fillColor("black")
         .text(
-          `${productData.product.title} - ${productData.quantity} x Rs. ${productData.product.price}`,
+          `${productData.product.title} - ${productData.quantity} x $ ${productData.product.price}`,
           {
             align: "center",
           }
@@ -279,7 +279,7 @@ exports.getInvoice = (req, res, next) => {
     pdfDoc
       .moveDown(0.5)
       .font("Times-Roman", 15)
-      .text(`Total Price - Rs. ${totalPrice}`, 80, 698, {
+      .text(`Total Price - $ ${totalPrice}`, 80, 698, {
         align: "center",
       });
 

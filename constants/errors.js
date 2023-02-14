@@ -17,6 +17,7 @@ module.exports = {
     PRODUCTS_ERROR: "Database Operation failed while trying to find all products.",
     PRODUCT_DELETE_ERROR:  "Database Operation failed while trying to delete the product.",
     CART_ERROR: "Database Operation failed while fetching user cart",
+    CHECKOUT_ERROR: "Database Operation failed while loading checkout page",
     CART_DELETE_ERROR: "Database operation to delete cart item failed.",
     ORDER_ERROR: "Database operation to find orders failed.",
     ORDER_CREATE_ERROR: "Database operation to create order failed.",

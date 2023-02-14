@@ -87,7 +87,7 @@ exports.getIndex = (req, res, next) => {
 
 exports.getCart = (req, res, next) => {
   req.user
-    .populate("cart.items.productId", "title")
+    .populate("cart.items.productId")
     .then((user) => {
       const products = user.cart.items.filter((cartItem) => {
         return cartItem.productId !== null;
@@ -106,7 +106,7 @@ exports.getCart = (req, res, next) => {
       res.render("shop/cart", {
         path: "/cart",
         pageTitle: "Your Cart",
-        products: products,
+        products
       });
     })
     .catch((err) => {
@@ -286,9 +286,39 @@ exports.getInvoice = (req, res, next) => {
     pdfDoc.end();
   });
 };
-// exports.getCheckout = (req, res, next) => {
-//   res.render("shop/checkout", {
-//     path: "/checkout",
-//     pageTitle: "Checkout",
-//   });
-// };
+exports.getCheckout = (req, res, next) => {
+  req.user
+  .populate("cart.items.productId")
+  .then((user) => {
+    const products = user.cart.items.filter((cartItem) => {
+      return cartItem.productId !== null;
+    });
+
+    if (products.length !== user.cart.items.length) {
+      req.user.cart.items = products;
+      req.user
+        .save()
+        .then((result) =>
+          console.log("Cart was updated. Some items were removed by admin")
+        )
+        .catch((err) => console.log(err));
+    }
+
+    let totalSum = products.reduce((acc,product) =>{
+        return acc + product.quantity * product.productId.price
+    }, 0)
+
+    res.render("shop/checkout", {
+      path: "/checkout",
+      pageTitle: "Checkout",
+      products,
+      totalSum
+    });
+  })
+  .catch((err) => {
+    err = new Error(ERRORS.CHECKOUT_ERROR);
+    return next(err);
+  });
+
+  
+};

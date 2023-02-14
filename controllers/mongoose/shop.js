@@ -1,12 +1,13 @@
 const fs = require("fs");
 const path = require("path");
 const PDFDocument = require("pdfkit");
-
+const dotenv = require("dotenv");
+dotenv.config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const Product = require("../../models/mongoose/product");
 const Order = require("../../models/mongoose/order");
 const ERRORS = require("../../constants/errors");
 const CONSTANTS = require("../../constants/common");
-const { constants } = require("fs/promises");
 
 exports.getProducts = (req, res, next) => {
   // Product.find() //unlike mongodb find() method which returns cursor, mongoose find() returns array. We can convert
@@ -106,7 +107,7 @@ exports.getCart = (req, res, next) => {
       res.render("shop/cart", {
         path: "/cart",
         pageTitle: "Your Cart",
-        products
+        products,
       });
     })
     .catch((err) => {
@@ -287,38 +288,60 @@ exports.getInvoice = (req, res, next) => {
   });
 };
 exports.getCheckout = (req, res, next) => {
+  let products, totalSum;
   req.user
-  .populate("cart.items.productId")
-  .then((user) => {
-    const products = user.cart.items.filter((cartItem) => {
-      return cartItem.productId !== null;
+    .populate("cart.items.productId")
+    .then((user) => {
+      products = user.cart.items.filter((cartItem) => {
+        return cartItem.productId !== null;
+      });
+
+      if (products.length !== user.cart.items.length) {
+        req.user.cart.items = products;
+        req.user
+          .save()
+          .then((result) =>
+            console.log("Cart was updated. Some items were removed by admin")
+          )
+          .catch((err) => console.log(err));
+      }
+
+      totalSum = products.reduce((acc, product) => {
+        return acc + product.quantity * product.productId.price;
+      }, 0);
+
+      return stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: products.map((p) => {
+          return {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: p.productId.title,
+                description: p.productId.description,
+              },
+              unit_amount: p.productId.price * 100,
+            },
+            quantity: p.quantity,
+          };
+        }),
+        mode: 'payment',
+        success_url: req.protocol + "://" + req.get("host") + "/checkout/success", // => http://localhost:portno
+        cancel_url: req.protocol + "://" + req.get("host") + "/checkout/cancel",
+      });
+    })
+    .then((session) => {
+      res.render("shop/checkout", {
+        path: "/checkout",
+        pageTitle: "Checkout",
+        products,
+        totalSum,
+        sessionId: session.id,
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+      err = new Error(ERRORS.CHECKOUT_ERROR);
+      return next(err);
     });
-
-    if (products.length !== user.cart.items.length) {
-      req.user.cart.items = products;
-      req.user
-        .save()
-        .then((result) =>
-          console.log("Cart was updated. Some items were removed by admin")
-        )
-        .catch((err) => console.log(err));
-    }
-
-    let totalSum = products.reduce((acc,product) =>{
-        return acc + product.quantity * product.productId.price
-    }, 0)
-
-    res.render("shop/checkout", {
-      path: "/checkout",
-      pageTitle: "Checkout",
-      products,
-      totalSum
-    });
-  })
-  .catch((err) => {
-    err = new Error(ERRORS.CHECKOUT_ERROR);
-    return next(err);
-  });
-
-  
 };

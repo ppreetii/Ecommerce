@@ -23,8 +23,12 @@ router.get('/orders', isAuthorised , shopController.getOrders);
 
 router.get('/orders/:orderId', isAuthorised , shopController.getInvoice);
 
-router.post('/create-order', isAuthorised ,shopController.postOrder);
+// router.post('/create-order', isAuthorised ,shopController.postOrder);
 
 router.get('/checkout', isAuthorised , shopController.getCheckout);
+
+router.get('/checkout/success', isAuthorised , shopController.postOrder);
+
+router.get('/checkout/cancel', isAuthorised , shopController.getCheckout);
 
 module.exports = router;

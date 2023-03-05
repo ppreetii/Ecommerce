@@ -9,6 +9,7 @@ const MongoDbStore = require("connect-mongodb-session")(session);
 const csrf = require("csurf");
 const flash = require("connect-flash");
 const multer = require("multer");
+const helmet = require("helmet");
 
 dotenv.config();
 
@@ -65,6 +66,7 @@ const fileFilter = (req, file, cb) => {
 
 app.set("view engine", "ejs");
 app.set("views", "views");
+app.use(helmet());
 
 //bodyParser.urlencoded only parse req body in text form. Binary data can't be parsed. So we use multer.
 app.use(bodyParser.urlencoded({ extended: false }));

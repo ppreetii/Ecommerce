@@ -1,5 +1,5 @@
 const path = require("path");
-
+const fs = require("fs");
 const mongoose = require("mongoose");
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -11,6 +11,7 @@ const flash = require("connect-flash");
 const multer = require("multer");
 const helmet = require("helmet");
 const compression = require("compression");
+const morgan = require("morgan");
 
 dotenv.config();
 
@@ -65,10 +66,16 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname,'access.log'),
+  { flags : 'a' }
+);
+
 app.set("view engine", "ejs");
 app.set("views", "views");
 app.use(helmet());
 app.use(compression());
+app.use(morgan('combined' , {stream : accessLogStream}));
 
 //bodyParser.urlencoded only parse req body in text form. Binary data can't be parsed. So we use multer.
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -163,7 +170,7 @@ mongoose
     });
     */
     console.log("Connected to MongoDb via mongoose");
-    app.listen(process.env.PORT);
+    app.listen(process.env.PORT || 3000);
     console.log(`Server started at port ${process.env.PORT}`);
   })
   .catch((err) => console.log(err));

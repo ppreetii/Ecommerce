@@ -1,4 +1,5 @@
 const path = require("path");
+// const https = reuire("https");
 const fs = require("fs");
 const mongoose = require("mongoose");
 const express = require("express");
@@ -44,6 +45,10 @@ const store = new MongoDbStore({
 });
 const csrfProtection = csrf();
 
+/*
+const privateKey = fs.readFileSync("server.key");
+const certificate = fs.readFileSync("server.cert");
+*/
 const fileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "images");
@@ -67,15 +72,15 @@ const fileFilter = (req, file, cb) => {
 };
 
 const accessLogStream = fs.createWriteStream(
-  path.join(__dirname,'access.log'),
-  { flags : 'a' }
+  path.join(__dirname, "access.log"),
+  { flags: "a" }
 );
 
 app.set("view engine", "ejs");
 app.set("views", "views");
 app.use(helmet());
 app.use(compression());
-app.use(morgan('combined' , {stream : accessLogStream}));
+app.use(morgan("combined", { stream: accessLogStream }));
 
 //bodyParser.urlencoded only parse req body in text form. Binary data can't be parsed. So we use multer.
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -171,6 +176,9 @@ mongoose
     */
     console.log("Connected to MongoDb via mongoose");
     app.listen(process.env.PORT || 3000);
+   /* https
+      .createServer({ key: privateKey, cert: certificate }, app)
+      .listen(process.env.PORT || 3000); */
     console.log(`Server started at port ${process.env.PORT}`);
   })
   .catch((err) => console.log(err));
